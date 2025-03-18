@@ -274,6 +274,13 @@ SUBCATEGORY_PARAMS = {
         "remote_signer",
         "additional_services",
     ],
+    "bitcoin_params": [
+        "rpc_url",
+        "rpc_user",
+        "rpc_password",
+        "confirmation_threshold",
+        "revert_threshold",
+    ],
 }
 
 ADDITIONAL_SERVICES_PARAMS = [
@@ -314,6 +321,7 @@ ADDITIONAL_CATEGORY_PARAMS = {
     "keymanager_enabled": "",
     "checkpoint_sync_enabled": "",
     "checkpoint_sync_url": "",
+    "bitcoin_params": "",
 }
 
 

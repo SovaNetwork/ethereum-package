@@ -100,6 +100,12 @@ network_params:
   devnet_repo: ethpandaops
   prefunded_accounts: {}
 additional_services: []
+bitcoin_params:
+  rpc_url: "http://127.0.0.1:18443"
+  rpc_user: "user"
+  rpc_password: "password"
+  confirmation_threshold: 6
+  revert_threshold: 18
 dora_params:
   image: ""
 tx_spammer_params:

@@ -10,6 +10,7 @@ lighthouse = import_module("../../cl/lighthouse/lighthouse_launcher.star")
 flashbots_rbuilder = import_module(
     "../../mev/flashbots/mev_builder/mev_builder_launcher.star"
 )
+sentinel = import_module("../../sentinel/sentinel_launcher.star")
 
 RPC_PORT_NUM = 8545
 WS_PORT_NUM = 8546
@@ -57,6 +58,22 @@ def launch(
 
     cl_client_name = service_name.split("-")[3]
 
+    # Launch the sentinel service
+    sentinel_context = get_sentinel_config(
+        plan,
+        launcher,
+        service_name,
+        participant,
+        existing_el_clients,
+        cl_client_name,
+        log_level,
+        persistent,
+        tolerations,
+        node_selectors,
+        port_publisher,
+        participant_index,
+    )
+
     config = get_config(
         plan,
         launcher,
@@ -70,6 +87,7 @@ def launch(
         node_selectors,
         port_publisher,
         participant_index,
+        sentinel_context,
     )
 
     service = plan.add_service(service_name, config)
@@ -96,7 +114,8 @@ def launch(
         rpc_http_url=http_url,
         ws_url=ws_url,
         service_name=service_name,
-        el_metrics_info=[sova_reth_metrics_info],
+        el_metrics_info=[sova_reth_metrics_info, sentinel_context.metrics_info if sentinel_context else None],
+        sentinel_context=sentinel_context,
     )
 
 
@@ -113,6 +132,7 @@ def get_config(
     node_selectors,
     port_publisher,
     participant_index,
+    sentinel_context=None,
 ):
     public_ports = {}
     discovery_port = DISCOVERY_PORT_NUM
@@ -152,7 +172,7 @@ def get_config(
     cmd = ["node"]
 
     # host_machine = "ec2-xx-xx-xx-xx.compute-1.amazonaws.com"
-    host_machine = "127.0.0.1"
+    host_machine = "10.0.0.39"
 
     cmd.extend(
         [
@@ -162,8 +182,20 @@ def get_config(
             "--btc-rpc-password=password",
             "--network-signing-url=http://{0}:{1}".format(host_machine, NETWORK_SIGNING_URL_PORT),  # Network enclave
             "--network-utxo-url=http://{0}:{1}".format(host_machine, NETWORK_UTXO_URL_PORT),  # Network UTXOs
-            "--sentinel-url=http://{0}:{1}".format(host_machine, SENTINEL_URL_PORT),  # Sentinel
-        
+        ]
+    )
+    
+    # Configure sentinel URL - either use the deployed sentinel service or default
+    if sentinel_context:
+        cmd.append("--sentinel-url=http://{0}:{1}".format(
+            sentinel_context.ip_address, 
+            sentinel.SENTINEL_PORT
+        ))
+    else:
+        cmd.append("--sentinel-url=http://0.0.0.0:{0}".format(SENTINEL_URL_PORT))  # Default Sentinel URL
+    
+    cmd.extend(
+        [
             "-{0}".format(log_level),
             "--datadir=" + EXECUTION_DATA_DIRPATH_ON_CLIENT_CONTAINER,
             "--chain={0}".format(
@@ -193,6 +225,7 @@ def get_config(
             "--metrics=0.0.0.0:{0}".format(METRICS_PORT_NUM),
             "--discovery.port={0}".format(discovery_port),
             "--port={0}".format(discovery_port),
+            "--log.stdout.filter=debug",
         ]
     )
 
@@ -293,6 +326,54 @@ def get_config(
         config_args["max_memory"] = participant.el_max_mem
     return ServiceConfig(**config_args)
 
+
+def get_sentinel_config(
+    plan,
+    launcher,
+    service_name,
+    participant,
+    existing_el_clients,
+    cl_client_name,
+    log_level,
+    persistent,
+    tolerations,
+    node_selectors,
+    port_publisher,
+    participant_index,
+):
+    """Creates a configuration for the Sova Sentinel service
+    
+    This service manages storage slot locks for the Sova network
+    """
+    sentinel_service_name = "sentinel-{0}".format(service_name)
+    
+    # Configure Bitcoin RPC settings - typically these would come from the same
+    # source as the node is using
+    host_machine = port_publisher.nat_exit_ip
+    btc_rpc_url = "http://{0}:{1}".format(host_machine, BTC_NETWORK_URL_PORT)
+    btc_rpc_user = "user"
+    btc_rpc_pass = "password"
+    
+    # Create a new sentinel launcher
+    sentinel_launcher = sentinel.new_sentinel_launcher(
+        host_machine=host_machine,
+        bitcoin_rpc_url=btc_rpc_url,
+        bitcoin_rpc_user=btc_rpc_user,
+        bitcoin_rpc_pass=btc_rpc_pass,
+    )
+    
+    # Launch the sentinel service
+    sentinel_context = sentinel.launch(
+        plan=plan,
+        launcher=sentinel_launcher,
+        service_name=sentinel_service_name,
+        persistent=persistent,
+        tolerations=tolerations,
+        node_selectors=node_selectors,
+        docker_cache_params=participant.docker_cache_params if hasattr(participant, "docker_cache_params") else None,
+    )
+    
+    return sentinel_context
 
 def new_sova_reth_launcher(
     el_cl_genesis_data, jwt_file, network, builder_type=False, mev_params=None
