@@ -4,6 +4,7 @@ EL_TYPE = struct(
     nethermind="nethermind",
     besu="besu",
     reth="reth",
+    sova_reth="sova-reth",
     reth_builder="reth-builder",
     ethereumjs="ethereumjs",
     nimbus="nimbus",

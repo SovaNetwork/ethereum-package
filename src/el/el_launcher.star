@@ -7,6 +7,7 @@ besu = import_module("./besu/besu_launcher.star")
 erigon = import_module("./erigon/erigon_launcher.star")
 nethermind = import_module("./nethermind/nethermind_launcher.star")
 reth = import_module("./reth/reth_launcher.star")
+sova_reth = import_module("./sova-reth/sova_reth_launcher.star")
 ethereumjs = import_module("./ethereumjs/ethereumjs_launcher.star")
 nimbus_eth1 = import_module("./nimbus-eth1/nimbus_launcher.star")
 
@@ -81,6 +82,14 @@ def launch(
                 mev_params=mev_params,
             ),
             "launch_method": reth.launch,
+        },
+        constants.EL_TYPE.sova_reth: {
+            "launcher": sova_reth.new_sova_reth_launcher(
+                el_cl_data,
+                jwt_file,
+                network_params.network,
+            ),
+            "launch_method": sova_reth.launch,
         },
         constants.EL_TYPE.ethereumjs: {
             "launcher": ethereumjs.new_ethereumjs_launcher(

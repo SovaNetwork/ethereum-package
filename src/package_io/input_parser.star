@@ -12,6 +12,7 @@ DEFAULT_EL_IMAGES = {
     "nethermind": "nethermindeth/nethermind:master",
     "besu": "hyperledger/besu:latest",
     "reth": "ghcr.io/paradigmxyz/reth",
+    "sova-reth": "ghcr.io/sovanetwork/sova-reth:latest",
     "ethereumjs": "ethpandaops/ethereumjs:master",
     "nimbus": "ethpandaops/nimbus-eth1:master",
 }

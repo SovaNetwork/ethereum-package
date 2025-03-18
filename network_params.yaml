@@ -1,7 +1,7 @@
 participants:
 # EL
-  - el_type: geth
-    el_image: ethereum/client-go:latest
+  - el_type: sova-reth
+    el_image: ghcr.io/sovanetwork/sova-reth:latest
     el_log_level: ""
     el_extra_env_vars: {}
     el_extra_labels: {}
@@ -55,7 +55,7 @@ participants:
 # participant specific
     node_selectors: {}
     tolerations: []
-    count: 2
+    count: 3
     snooper_enabled: false
     ethereum_metrics_exporter_enabled: false
     xatu_sentry_enabled: false
@@ -67,7 +67,7 @@ participants:
     builder_network_params: null
     keymanager_enabled: false
 network_params:
-  network: kurtosis
+  network: kurtosis # need to create a Sova Testnet network. See https://github.com/SovaNetwork/sova-devnets
   network_id: "3151908"
   deposit_contract_address: "0x4242424242424242424242424242424242424242"
   seconds_per_slot: 12
