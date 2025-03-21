@@ -2,7 +2,7 @@ participants:
 # EL
   - el_type: sova-reth
     el_image: ghcr.io/sovanetwork/sova-reth:latest
-    el_log_level: ""
+    el_log_level: "debug"
     el_extra_env_vars: {}
     el_extra_labels: {}
     el_extra_params: []
@@ -55,7 +55,7 @@ participants:
 # participant specific
     node_selectors: {}
     tolerations: []
-    count: 3
+    count: 2
     snooper_enabled: false
     ethereum_metrics_exporter_enabled: false
     xatu_sentry_enabled: false

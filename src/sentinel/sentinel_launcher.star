@@ -8,11 +8,10 @@ SENTINEL_PORT = 50051
 METRICS_PORT = 9102
 METRICS_PATH = "/metrics"
 
-def new_sentinel_launcher(host_machine, bitcoin_rpc_url=None, bitcoin_rpc_user=None, bitcoin_rpc_pass=None):
+def new_sentinel_launcher(bitcoin_rpc_url=None, bitcoin_rpc_user=None, bitcoin_rpc_pass=None):
     """Creates a new sentinel launcher configuration
     
     Args:
-        host_machine: The host machine IP or hostname where the sova-reth node is running
         bitcoin_rpc_url: URL for the Bitcoin RPC service
         bitcoin_rpc_user: Username for Bitcoin RPC authentication
         bitcoin_rpc_pass: Password for Bitcoin RPC authentication
@@ -21,7 +20,6 @@ def new_sentinel_launcher(host_machine, bitcoin_rpc_url=None, bitcoin_rpc_user=N
         A struct containing the sentinel launch configuration
     """
     return struct(
-        host_machine=host_machine,
         bitcoin_rpc_url=bitcoin_rpc_url,
         bitcoin_rpc_user=bitcoin_rpc_user,
         bitcoin_rpc_pass=bitcoin_rpc_pass,

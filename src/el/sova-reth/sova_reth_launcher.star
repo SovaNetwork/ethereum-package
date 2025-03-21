@@ -18,10 +18,12 @@ DISCOVERY_PORT_NUM = 30303
 ENGINE_RPC_PORT_NUM = 8551
 METRICS_PORT_NUM = 9001
 RBUILDER_PORT_NUM = 8645
+
+# Sova specific
+HOST_MACHINE_URL = "10.0.0.39"
 BTC_NETWORK_URL_PORT = 18443
 NETWORK_SIGNING_URL_PORT = 5555
 NETWORK_UTXO_URL_PORT = 5557
-SENTINEL_URL_PORT = 50051
 
 # Paths
 METRICS_PATH = "/metrics"
@@ -59,7 +61,7 @@ def launch(
     cl_client_name = service_name.split("-")[3]
 
     # Launch the sentinel service
-    sentinel_context = get_sentinel_config(
+    sentinel_context = add_sentinel_service(
         plan,
         launcher,
         service_name,
@@ -74,6 +76,7 @@ def launch(
         participant_index,
     )
 
+    # launch the el service with the sentinel context
     config = get_config(
         plan,
         launcher,
@@ -132,7 +135,7 @@ def get_config(
     node_selectors,
     port_publisher,
     participant_index,
-    sentinel_context=None,
+    sentinel_context,
 ):
     public_ports = {}
     discovery_port = DISCOVERY_PORT_NUM
@@ -171,29 +174,20 @@ def get_config(
 
     cmd = ["node"]
 
-    # host_machine = "ec2-xx-xx-xx-xx.compute-1.amazonaws.com"
-    host_machine = "10.0.0.39"
-
+    # Sova specific params
     cmd.extend(
         [
             "--btc-network=regtest",
-            "--network-url=http://{0}".format(host_machine),  # Bitcoin host url
+            "--network-url=http://{0}".format(HOST_MACHINE_URL),  # Bitcoin host url
             "--btc-rpc-username=user",
             "--btc-rpc-password=password",
-            "--network-signing-url=http://{0}:{1}".format(host_machine, NETWORK_SIGNING_URL_PORT),  # Network enclave
-            "--network-utxo-url=http://{0}:{1}".format(host_machine, NETWORK_UTXO_URL_PORT),  # Network UTXOs
+            "--network-signing-url=http://{0}:{1}".format(HOST_MACHINE_URL, NETWORK_SIGNING_URL_PORT),  # Network enclave
+            "--network-utxo-url=http://{0}:{1}".format(HOST_MACHINE_URL, NETWORK_UTXO_URL_PORT),  # Network UTXOs
+            "--sentinel-url={0}".format(sentinel_context.grpc_url), # sentinel url
         ]
     )
     
-    # Configure sentinel URL - either use the deployed sentinel service or default
-    if sentinel_context:
-        cmd.append("--sentinel-url=http://{0}:{1}".format(
-            sentinel_context.ip_address, 
-            sentinel.SENTINEL_PORT
-        ))
-    else:
-        cmd.append("--sentinel-url=http://0.0.0.0:{0}".format(SENTINEL_URL_PORT))  # Default Sentinel URL
-    
+    # Reth specific params
     cmd.extend(
         [
             "-{0}".format(log_level),
@@ -225,7 +219,6 @@ def get_config(
             "--metrics=0.0.0.0:{0}".format(METRICS_PORT_NUM),
             "--discovery.port={0}".format(discovery_port),
             "--port={0}".format(discovery_port),
-            "--log.stdout.filter=debug",
         ]
     )
 
@@ -327,7 +320,7 @@ def get_config(
     return ServiceConfig(**config_args)
 
 
-def get_sentinel_config(
+def add_sentinel_service(
     plan,
     launcher,
     service_name,
@@ -347,16 +340,13 @@ def get_sentinel_config(
     """
     sentinel_service_name = "sentinel-{0}".format(service_name)
     
-    # Configure Bitcoin RPC settings - typically these would come from the same
-    # source as the node is using
-    host_machine = port_publisher.nat_exit_ip
-    btc_rpc_url = "http://{0}:{1}".format(host_machine, BTC_NETWORK_URL_PORT)
+    # Configure Bitcoin RPC settings
+    btc_rpc_url = "http://{0}:{1}".format(HOST_MACHINE_URL, BTC_NETWORK_URL_PORT)
     btc_rpc_user = "user"
     btc_rpc_pass = "password"
     
     # Create a new sentinel launcher
     sentinel_launcher = sentinel.new_sentinel_launcher(
-        host_machine=host_machine,
         bitcoin_rpc_url=btc_rpc_url,
         bitcoin_rpc_user=btc_rpc_user,
         bitcoin_rpc_pass=btc_rpc_pass,
