@@ -27,6 +27,7 @@ def launch(
     port_publisher,
     mev_builder_type,
     mev_params,
+    sova_params,
 ):
     el_launchers = {
         constants.EL_TYPE.geth: {
@@ -88,6 +89,9 @@ def launch(
                 el_cl_data,
                 jwt_file,
                 network_params.network,
+                builder_type=False,
+                mev_params=None,
+                sova_params=sova_params,
             ),
             "launch_method": sova_reth.launch,
         },

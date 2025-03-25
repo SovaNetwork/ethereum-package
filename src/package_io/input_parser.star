@@ -88,10 +88,10 @@ ATTR_TO_BE_SKIPPED_AT_ROOT = (
     "port_publisher",
     "spamoor_params",
     "spamoor_blob_params",
-    "bitcoin_params",
+    "sova_params",
 )
 
-def get_default_bitcoin_params():
+def get_default_sova_params():
     return {
         "rpc_url": "http://bitcoin:18443",
         "rpc_user": "user",
@@ -131,7 +131,7 @@ def input_parser(plan, input_args):
     result["port_publisher"] = get_port_publisher_params("default")
     result["spamoor_params"] = get_default_spamoor_params()
     result["spamoor_blob_params"] = get_default_spamoor_blob_params()
-    result["bitcoin_params"] = get_default_bitcoin_params()
+    result["sova_params"] = get_default_sova_params()
 
     if constants.NETWORK_NAME.shadowfork in result["network_params"]["network"]:
         shadow_base = result["network_params"]["network"].split("-shadowfork")[0]
@@ -205,10 +205,10 @@ def input_parser(plan, input_args):
             for sub_attr in input_args["ethereum_genesis_generator_params"]:
                 sub_value = input_args["ethereum_genesis_generator_params"][sub_attr]
                 result["ethereum_genesis_generator_params"][sub_attr] = sub_value
-        elif attr == "bitcoin_params":
-            for sub_attr in input_args["bitcoin_params"]:
-                sub_value = input_args["bitcoin_params"][sub_attr]
-                result["bitcoin_params"][sub_attr] = sub_value
+        elif attr == "sova_params":
+            for sub_attr in input_args["sova_params"]:
+                sub_value = input_args["sova_params"][sub_attr]
+                result["sova_params"][sub_attr] = sub_value
 
     if result.get("disable_peer_scoring"):
         result = enrich_disable_peer_scoring(result)
@@ -406,13 +406,6 @@ def input_parser(plan, input_args):
             verif_image=result["blockscout_params"]["verif_image"],
             frontend_image=result["blockscout_params"]["frontend_image"],
         ),
-        bitcoin_params=struct(
-            rpc_url=result["bitcoin_params"]["rpc_url"],
-            rpc_user=result["bitcoin_params"]["rpc_user"],
-            rpc_password=result["bitcoin_params"]["rpc_password"],
-            confirmation_threshold=result["bitcoin_params"]["confirmation_threshold"],
-            revert_threshold=result["bitcoin_params"]["revert_threshold"],
-        ),
         dora_params=struct(
             image=result["dora_params"]["image"],
             env=result["dora_params"]["env"],
@@ -531,6 +524,14 @@ def input_parser(plan, input_args):
             additional_services_public_port_start=result["port_publisher"][
                 "additional_services"
             ]["public_port_start"],
+        ),
+        sova_params=struct(
+            btc_network=result["sova_params"]["btc_network"],
+            rpc_url=result["sova_params"]["rpc_url"],
+            rpc_user=result["sova_params"]["rpc_user"],
+            rpc_password=result["sova_params"]["rpc_password"],
+            confirmation_threshold=result["sova_params"]["confirmation_threshold"],
+            revert_threshold=result["sova_params"]["revert_threshold"],
         ),
     )
 
@@ -907,6 +908,7 @@ def default_input_args(input_args):
             "public_port_start": None,
         },
         "spamoor_params": get_default_spamoor_params(),
+        "sova_params": default_sova_params(),
     }
 
 
@@ -1525,4 +1527,15 @@ def docker_cache_image_override(plan, result):
 def get_default_ethereum_genesis_generator_params():
     return {
         "image": constants.DEFAULT_ETHEREUM_GENESIS_GENERATOR_IMAGE,
+    }
+
+
+def default_sova_params():
+    return {
+        "btc_network": "regtest",
+        "rpc_url": "http://127.0.0.1",
+        "rpc_user": "user",
+        "rpc_password": "password",
+        "confirmation_threshold": 6,
+        "revert_threshold": 18
     }

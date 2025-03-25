@@ -8,13 +8,15 @@ SENTINEL_PORT = 50051
 METRICS_PORT = 9102
 METRICS_PATH = "/metrics"
 
-def new_sentinel_launcher(bitcoin_rpc_url=None, bitcoin_rpc_user=None, bitcoin_rpc_pass=None):
+def new_sentinel_launcher(bitcoin_rpc_url=None, bitcoin_rpc_user=None, bitcoin_rpc_pass=None, confirmation_threshold=6, revert_threshold=18):
     """Creates a new sentinel launcher configuration
     
     Args:
         bitcoin_rpc_url: URL for the Bitcoin RPC service
         bitcoin_rpc_user: Username for Bitcoin RPC authentication
         bitcoin_rpc_pass: Password for Bitcoin RPC authentication
+        confirmation_threshold: Number of confirmations required to unlock a slot
+        revert_threshold: Number of blocks after which a locked slot will revert
     
     Returns:
         A struct containing the sentinel launch configuration
@@ -23,14 +25,16 @@ def new_sentinel_launcher(bitcoin_rpc_url=None, bitcoin_rpc_user=None, bitcoin_r
         bitcoin_rpc_url=bitcoin_rpc_url,
         bitcoin_rpc_user=bitcoin_rpc_user,
         bitcoin_rpc_pass=bitcoin_rpc_pass,
+        confirmation_threshold=confirmation_threshold,
+        revert_threshold=revert_threshold,
     )
 
 def launch(
     plan,
     launcher,
     service_name,
-    bitcoin_confirmation_threshold=6,
-    bitcoin_revert_threshold=18,
+    bitcoin_confirmation_threshold=None,
+    bitcoin_revert_threshold=None,
     min_cpu=100,
     max_cpu=500,
     min_mem=128,
@@ -60,7 +64,7 @@ def launch(
     Returns:
         A struct containing information about the launched sentinel service
     """
-    image = "ghcr.io/sovanetwork/sova-sentinel:latest"
+    image = "ghcr.io/sovanetwork/sova-sentinel:v0.1.0"
     
     # Apply docker cache if needed
     if docker_cache_params and docker_cache_params.enabled and constants.CONTAINER_REGISTRY.ghcr in image:
@@ -76,13 +80,17 @@ def launch(
         # "metrics": PortSpec(number=METRICS_PORT, transport_protocol="TCP"),
     }
 
+    # Get confirmation and revert thresholds from launcher if not explicitly provided
+    confirmation_threshold = bitcoin_confirmation_threshold or launcher.confirmation_threshold
+    revert_threshold = bitcoin_revert_threshold or launcher.revert_threshold
+
     # Set up environment variables
     env_vars = {
         "SOVA_SENTINEL_HOST": "0.0.0.0",
         "SOVA_SENTINEL_PORT": str(SENTINEL_PORT),
         "SOVA_SENTINEL_DB_PATH": "/app/data/slot_locks.db",
-        "BITCOIN_CONFIRMATION_THRESHOLD": str(bitcoin_confirmation_threshold),
-        "BITCOIN_REVERT_THRESHOLD": str(bitcoin_revert_threshold),
+        "BITCOIN_CONFIRMATION_THRESHOLD": str(confirmation_threshold),
+        "BITCOIN_REVERT_THRESHOLD": str(revert_threshold),
         "RUST_LOG": "debug",
     }
     

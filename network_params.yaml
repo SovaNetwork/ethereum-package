@@ -1,7 +1,7 @@
 participants:
 # EL
   - el_type: sova-reth
-    el_image: ghcr.io/sovanetwork/sova-reth:latest
+    el_image: ghcr.io/sovanetwork/sova-reth:v0.0.2
     el_log_level: "debug"
     el_extra_env_vars: {}
     el_extra_labels: {}
@@ -55,7 +55,7 @@ participants:
 # participant specific
     node_selectors: {}
     tolerations: []
-    count: 2
+    count: 3
     snooper_enabled: false
     ethereum_metrics_exporter_enabled: false
     xatu_sentry_enabled: false
@@ -68,7 +68,7 @@ participants:
     keymanager_enabled: false
 network_params:
   network: kurtosis # need to create a Sova Testnet network. See https://github.com/SovaNetwork/sova-devnets
-  network_id: "3151908"
+  network_id: "120893"
   deposit_contract_address: "0x4242424242424242424242424242424242424242"
   seconds_per_slot: 12
   num_validator_keys_per_node: 64
@@ -99,13 +99,36 @@ network_params:
   additional_preloaded_contracts: {}
   devnet_repo: ethpandaops
   prefunded_accounts: {}
-additional_services: []
-bitcoin_params:
-  rpc_url: "http://127.0.0.1:18443"
+
+# Sova-specific parameters
+sova_params:
+  # Bitcoin network type to connect to (options: regtest, testnet, mainnet)
+  btc_network: "regtest"
+  
+  # Bitcoin RPC connection URL - this is the base URL to connect to the Bitcoin node
+  # For local development with a Bitcoin Core node, this is typically http://127.0.0.1
+  # Port number can be included or will be added automatically (default: 18443 for regtest)
+  rpc_url: "http://10.0.0.39"
+  
+  # Bitcoin RPC authentication credentials
   rpc_user: "user"
   rpc_password: "password"
+  
+  # Number of Bitcoin confirmations required before a slot lock is considered valid
+  # Higher values increase security but introduce more delay
   confirmation_threshold: 6
+  
+  # Number of blocks after which a locked slot will automatically revert if not used
+  # This prevents permanent locking of slots in case of issues
   revert_threshold: 18
+  
+  # Optional: Custom port configurations for various services
+  # If not specified, defaults will be used:
+  # - Bitcoin RPC port: 18443 (for regtest)
+  # - Network signing service port: 5555
+  # - Network UTXO service port: 5557
+
+additional_services: []
 dora_params:
   image: ""
 tx_spammer_params:

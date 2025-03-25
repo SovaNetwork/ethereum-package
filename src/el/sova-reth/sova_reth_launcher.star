@@ -19,8 +19,7 @@ ENGINE_RPC_PORT_NUM = 8551
 METRICS_PORT_NUM = 9001
 RBUILDER_PORT_NUM = 8645
 
-# Sova specific
-HOST_MACHINE_URL = "10.0.0.39"
+# Default ports if not specified in sova_params
 BTC_NETWORK_URL_PORT = 18443
 NETWORK_SIGNING_URL_PORT = 5555
 NETWORK_UTXO_URL_PORT = 5557
@@ -174,15 +173,24 @@ def get_config(
 
     cmd = ["node"]
 
+    # Extract the base URL without protocol from sova_params.rpc_url
+    rpc_url = launcher.sova_params.rpc_url if hasattr(launcher, "sova_params") else "http://127.0.0.1"
+    # Remove protocol if it exists
+    if "://" in rpc_url:
+        rpc_url = rpc_url.split("://")[1]
+    
+    # Get the Bitcoin network type from sova_params
+    btc_network = launcher.sova_params.btc_network if hasattr(launcher, "sova_params") else "regtest"
+
     # Sova specific params
     cmd.extend(
         [
-            "--btc-network=regtest",
-            "--network-url=http://{0}".format(HOST_MACHINE_URL),  # Bitcoin host url
-            "--btc-rpc-username=user",
-            "--btc-rpc-password=password",
-            "--network-signing-url=http://{0}:{1}".format(HOST_MACHINE_URL, NETWORK_SIGNING_URL_PORT),  # Network enclave
-            "--network-utxo-url=http://{0}:{1}".format(HOST_MACHINE_URL, NETWORK_UTXO_URL_PORT),  # Network UTXOs
+            "--btc-network={0}".format(btc_network),
+            "--network-url={0}".format(rpc_url),  # Bitcoin host url
+            "--btc-rpc-username={0}".format(launcher.sova_params.rpc_user if hasattr(launcher, "sova_params") else "user"),
+            "--btc-rpc-password={0}".format(launcher.sova_params.rpc_password if hasattr(launcher, "sova_params") else "password"),
+            "--network-signing-url=http://{0}:{1}".format(rpc_url, NETWORK_SIGNING_URL_PORT),  # Network enclave
+            "--network-utxo-url=http://{0}:{1}".format(rpc_url, NETWORK_UTXO_URL_PORT),  # Network UTXOs
             "--sentinel-url={0}".format(sentinel_context.grpc_url), # sentinel url
         ]
     )
@@ -340,16 +348,28 @@ def add_sentinel_service(
     """
     sentinel_service_name = "sentinel-{0}".format(service_name)
     
-    # Configure Bitcoin RPC settings
-    btc_rpc_url = "http://{0}:{1}".format(HOST_MACHINE_URL, BTC_NETWORK_URL_PORT)
-    btc_rpc_user = "user"
-    btc_rpc_pass = "password"
+    # Configure Bitcoin RPC settings from sova_params if available
+    rpc_url = launcher.sova_params.rpc_url if hasattr(launcher, "sova_params") else "http://127.0.0.1"
+    # Ensure rpc_url has protocol
+    if not rpc_url.startswith("http"):
+        rpc_url = "http://" + rpc_url
+        
+    # Configure port if not included in URL 
+    if ":" not in rpc_url.split("//")[1]:
+        rpc_url = "{0}:{1}".format(rpc_url, BTC_NETWORK_URL_PORT)
+    
+    btc_rpc_user = launcher.sova_params.rpc_user if hasattr(launcher, "sova_params") else "user"
+    btc_rpc_pass = launcher.sova_params.rpc_password if hasattr(launcher, "sova_params") else "password"
+    confirmation_threshold = launcher.sova_params.confirmation_threshold if hasattr(launcher, "sova_params") else 6
+    revert_threshold = launcher.sova_params.revert_threshold if hasattr(launcher, "sova_params") else 18
     
     # Create a new sentinel launcher
     sentinel_launcher = sentinel.new_sentinel_launcher(
-        bitcoin_rpc_url=btc_rpc_url,
+        bitcoin_rpc_url=rpc_url,
         bitcoin_rpc_user=btc_rpc_user,
         bitcoin_rpc_pass=btc_rpc_pass,
+        confirmation_threshold=confirmation_threshold,
+        revert_threshold=revert_threshold,
     )
     
     # Launch the sentinel service
@@ -366,7 +386,7 @@ def add_sentinel_service(
     return sentinel_context
 
 def new_sova_reth_launcher(
-    el_cl_genesis_data, jwt_file, network, builder_type=False, mev_params=None
+    el_cl_genesis_data, jwt_file, network, builder_type=False, mev_params=None, sova_params=None
 ):
     return struct(
         el_cl_genesis_data=el_cl_genesis_data,
@@ -374,4 +394,5 @@ def new_sova_reth_launcher(
         network=network,
         builder_type=builder_type,
         mev_params=mev_params,
+        sova_params=sova_params,
     )

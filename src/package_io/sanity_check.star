@@ -274,7 +274,8 @@ SUBCATEGORY_PARAMS = {
         "remote_signer",
         "additional_services",
     ],
-    "bitcoin_params": [
+    "sova_params": [
+        "btc_network",
         "rpc_url",
         "rpc_user",
         "rpc_password",
@@ -321,7 +322,7 @@ ADDITIONAL_CATEGORY_PARAMS = {
     "keymanager_enabled": "",
     "checkpoint_sync_enabled": "",
     "checkpoint_sync_url": "",
-    "bitcoin_params": "",
+    "sova_params": "",
 }
 
 
